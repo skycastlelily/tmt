@@ -361,6 +361,10 @@ class GuestTestcloud(tmt.GuestSsh):
             except libvirt.libvirtError:
                 return False
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def _get_url(self, url: str, message: str) -> requests.Response:
         """ Get url, retry when fails, return response """
 

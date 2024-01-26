@@ -113,6 +113,10 @@ class GuestContainer(tmt.Guest):
             ))
         return str(cmd_output.stdout).strip() == 'true'
 
+    @property
+    def logs(self) -> list[str]:
+        return []
+
     def wake(self) -> None:
         """ Wake up the guest """
         self.debug(
