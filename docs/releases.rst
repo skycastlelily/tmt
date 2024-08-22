@@ -18,6 +18,13 @@ We have started to use ``warnings.deprecated`` to advertise upcoming
 API deprecations.
 
 
+tmt-1.36
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Add support --workdir-root for clean function, users can specify
+the dir they want to clean things for.
+
+
 tmt-1.35
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
