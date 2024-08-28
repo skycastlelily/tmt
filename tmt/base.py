@@ -3287,6 +3287,7 @@ class Run(tmt.utils.Common):
                  tree: Optional[Tree] = None,
                  cli_invocation: Optional['tmt.cli.CliInvocation'] = None,
                  parent: Optional[tmt.utils.Common] = None,
+                 workdir_root: Optional[Path] = None,
                  logger: tmt.log.Logger) -> None:
         """ Initialize tree, workdir and plans """
         # Use the last run id if requested
@@ -3307,7 +3308,11 @@ class Run(tmt.utils.Common):
         # Do not create workdir now, postpone it until later, as options
         # have not been processed yet and we do not want commands such as
         # tmt run discover --how fmf --help to create a new workdir.
-        super().__init__(cli_invocation=cli_invocation, logger=logger, parent=parent)
+        super().__init__(
+            cli_invocation=cli_invocation,
+            logger=logger,
+            parent=parent,
+            workdir_root=workdir_root)
         self._workdir_path: WorkdirArgumentType = id_ or True
         self._tree: Optional[Tree] = tree
         self._plans: Optional[list[Plan]] = None
@@ -3917,7 +3922,8 @@ class Clean(tmt.utils.Common):
                 logger=self._logger,
                 id_=abs_path,
                 tree=self._cli_context_object.tree,
-                cli_invocation=self.cli_invocation)
+                cli_invocation=self.cli_invocation,
+                workdir_root=self.workdir_root)
             if not self._stop_running_guests(run):
                 successful = False
         return successful
@@ -3942,7 +3948,10 @@ class Clean(tmt.utils.Common):
         if self.opt('last'):
             # Pass the context containing --last to Run to choose
             # the correct one.
-            last_run = Run(logger=self._logger, cli_invocation=self.cli_invocation)
+            last_run = Run(
+                logger=self._logger,
+                cli_invocation=self.cli_invocation,
+                workdir_root=self.workdir_root)
             last_run._workdir_load(last_run._workdir_path)
             assert last_run.workdir is not None  # narrow type
             return self._clean_workdir(last_run.workdir)

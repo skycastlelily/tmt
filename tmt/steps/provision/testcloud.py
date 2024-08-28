@@ -24,7 +24,6 @@ import tmt.steps
 import tmt.steps.provision
 import tmt.utils
 from tmt.utils import (
-    WORKDIR_ROOT,
     Command,
     Path,
     ProvisionError,
@@ -100,10 +99,6 @@ def import_testcloud() -> None:
 
 
 # Testcloud cache to our tmt's workdir root
-TESTCLOUD_DATA = (
-    Path(os.environ['TMT_WORKDIR_ROOT']) if os.getenv('TMT_WORKDIR_ROOT') else WORKDIR_ROOT
-    ) / 'testcloud'
-TESTCLOUD_IMAGES = TESTCLOUD_DATA / 'images'
 
 TESTCLOUD_WORKAROUNDS: list[str] = []  # A list of commands to be executed during guest boot up
 
@@ -785,8 +780,8 @@ class GuestTestcloud(tmt.GuestSsh):
         self.config.DOWNLOAD_PROGRESS_VERBOSE = False
 
         # Configure to tmt's storage directories
-        self.config.DATA_DIR = TESTCLOUD_DATA
-        self.config.STORE_DIR = TESTCLOUD_IMAGES
+        self.config.DATA_DIR = self.workdir_root / 'testcloud'
+        self.config.STORE_DIR = self.config.DATA_DIR / 'images'
 
     def _combine_hw_memory(self) -> None:
         """ Combine ``hardware`` with ``--memory`` option """
@@ -892,8 +887,9 @@ class GuestTestcloud(tmt.GuestSsh):
         if self.is_dry_run:
             return
         # Make sure required directories exist
-        os.makedirs(TESTCLOUD_DATA, exist_ok=True)
-        os.makedirs(TESTCLOUD_IMAGES, exist_ok=True)
+        testcloud_data = self.workdir_root / 'testcloud'
+        os.makedirs(testcloud_data, exist_ok=True)
+        os.makedirs(testcloud_data / 'images', exist_ok=True)
 
         # Prepare config
         self.prepare_config()
@@ -921,7 +917,7 @@ class GuestTestcloud(tmt.GuestSsh):
         except (testcloud.exceptions.TestcloudPermissionsError,
                 PermissionError) as error:
             raise ProvisionError(
-                f"Failed to prepare the image. Check the '{TESTCLOUD_IMAGES}' "
+                f"Failed to prepare the image. Check the '{testcloud_data}' / 'images'"
                 f"directory permissions.") from error
         except KeyError as error:
             raise ProvisionError(
@@ -1207,20 +1203,23 @@ class ProvisionTestcloud(tmt.steps.provision.ProvisionPlugin[ProvisionTestcloudD
     def _print_local_images(self) -> None:
         """ Print images which are already cached """
         self.info("Locally available images")
-        for filename in sorted(TESTCLOUD_IMAGES.glob('*.qcow2')):
+        testcloud_images = self.workdir_root / 'testcloud' / 'images'
+        for filename in sorted(testcloud_images.glob('*.qcow2')):
             self.info(filename.name, shift=1, color='yellow')
-            click.echo(f"{TESTCLOUD_IMAGES / filename}")
+            click.echo(f"{testcloud_images / filename}")
 
     @classmethod
     def clean_images(cls, clean: 'tmt.base.Clean', dry: bool) -> bool:
         """ Remove the testcloud images """
         clean.info('testcloud', shift=1, color='green')
-        if not TESTCLOUD_IMAGES.exists():
+
+        testcloud_images = clean.workdir_root / 'testcloud' / 'images'
+        if not testcloud_images.exists():
             clean.warn(
-                f"Directory '{TESTCLOUD_IMAGES}' does not exist.", shift=2)
+                f"Directory '{testcloud_images}' does not exist.", shift=2)
             return True
         successful = True
-        for image in TESTCLOUD_IMAGES.iterdir():
+        for image in testcloud_images.iterdir():
             if dry:
                 clean.verbose(f"Would remove '{image}'.", shift=2)
             else:
